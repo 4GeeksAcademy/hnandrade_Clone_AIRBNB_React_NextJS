@@ -7,4 +7,5 @@ export interface Property {
 	reviewCount: number;
 	category: string;
 	images: string[];
+	coordinates: { lat: number; lng: number };
 }
