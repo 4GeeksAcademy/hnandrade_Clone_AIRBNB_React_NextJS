@@ -19,3 +19,9 @@ Fuente de verdad: `context.md` (secciones 4.1, 4.2 y 4.3). Léelo antes de escri
 - Un único `rooms: Room[]` en `data/rooms.ts` alimenta Home, Catálogo y Detalle; los ids coinciden con `/rooms/[id]`.
 - Catálogo en escritorio: grid `md:grid-cols-2` (lista y mapa a partes iguales); el mapa es sticky con `md:self-start`.
 - Al terminar cada tarea ejecuta `npx tsc --noEmit`, `npm run lint` y `npm run build`, y corrige hasta que pasen.
+
+## Retos opcionales (excepción a "sin librerías")
+- Solo se permiten: leaflet + react-leaflet (mapa) y react-day-picker (fechas), y solo para los retos. Siguen prohibidas shadcn, MUI, Ant y Chakra.
+- Leaflet solo en cliente: cargarlo con next/dynamic y ssr: false. Sin iconos de imagen por defecto: usar L.divIcon con clases Tailwind.
+- Sin style={{}} tampoco aquí. Para tamaños de una librería usa clases Tailwind, incluidas propiedades arbitrarias como [--rdp-day-width:38px].
+- Fechas: calcular noches con Date.UTC; nunca restar fechas locales directamente.
