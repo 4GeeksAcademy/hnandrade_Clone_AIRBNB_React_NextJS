@@ -27,3 +27,8 @@ Abre [http://localhost:3000](http://localhost:3000).
 - `docs/`: capturas de referencia y documentación.
 
 `context.md` contiene las especificaciones y decisiones de diseño del proyecto.
+
+## Retos opcionales
+
+- Mapa interactivo en Catálogo con `leaflet` y `react-leaflet`.
+- Selector de fechas y cálculo del precio total en el detalle con `react-day-picker`.

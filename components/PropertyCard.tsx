@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Property } from "@/types/property";
 import StarRating from "@/components/StarRating";
+import { formatPrice } from "@/utils/format";
 
 interface PropertyCardProps {
 	property: Property;
@@ -16,7 +17,7 @@ const PropertyCard = ({ property }: PropertyCardProps) => (
 				<h2 className="truncate text-sm font-semibold">{property.title}</h2>
 				<p className="mt-1 truncate text-sm text-neutral-500">{property.location}</p>
 				<p className="mt-1 text-sm">
-					<span className="font-semibold">${property.pricePerNight.toLocaleString("es-MX")} MXN</span> por noche
+					<span className="font-semibold">${formatPrice(property.pricePerNight)} MXN</span> por noche
 				</p>
 			</div>
 			<StarRating rating={property.rating} />

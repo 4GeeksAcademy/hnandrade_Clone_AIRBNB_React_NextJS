@@ -4,13 +4,14 @@ import Link from "next/link";
 import L from "leaflet";
 import { Marker, Popup } from "react-leaflet";
 import type { Property } from "@/types/property";
+import { formatPrice } from "@/utils/format";
 
 interface PriceMarkerProps {
 	property: Property;
 }
 
 const PriceMarker = ({ property }: PriceMarkerProps) => {
-	const price = property.pricePerNight.toLocaleString("es-MX");
+	const price = formatPrice(property.pricePerNight);
 	const icon = L.divIcon({
 		className: "",
 		html: `<span class="rounded-full bg-white px-2 py-1 text-xs font-semibold shadow-md border border-neutral-300">$${price}</span>`,

@@ -698,3 +698,10 @@ El arreglo canónico de datos mock será `Room[]` en `data/rooms.ts`. Home y Cat
 - **Componentes nuevos:** `PriceMarker` presenta el precio y el popup de cada alojamiento; `PropertyMap` monta el mapa de OpenStreetMap y ajusta sus bounds a las coordenadas disponibles; `CatalogMap` carga `PropertyMap` en cliente con `next/dynamic` y `ssr: false`, usando `MapPlaceholder` como fallback.
 - **Coordenadas:** `Property` incluye `coordinates: { lat: number; lng: number }`; cada alojamiento mock guarda coordenadas aproximadas de su ciudad o zona para posicionar el marcador.
 - **Iconos de precio:** se usa `L.divIcon` con una píldora HTML estilizada con clases Tailwind, evitando los iconos de imagen predeterminados de Leaflet, cuyas rutas de assets no se resuelven correctamente en Next.js.
+
+### 6.2 Fechas y precio total
+
+- **Librería:** `react-day-picker` v9, con modo de rango y locale española.
+- **Componentes nuevos:** `DateRangePicker` permite seleccionar llegada y salida; `PriceSummary` calcula y muestra el precio por noche multiplicado por las noches seleccionadas. `BookingCard` coordina el rango, el contador de huéspedes, el CTA y el resumen.
+- **Cálculo:** las noches representan días calendario y se calculan normalizando ambas fechas con `Date.UTC`, para evitar diferencias de zona horaria o cambios de horario. Si falta una fecha o la salida no es posterior a la llegada, el resultado es cero.
+- **CTA:** “Reservar” permanece sin navegación y deshabilitado hasta que haya un rango completo con al menos una noche.
