@@ -232,7 +232,7 @@ En móvil, el contenido se apila en una columna con márgenes laterales de 16px.
 
 ##### StarRating
 - **Archivo:** `components/StarRating.tsx`.
-- **Responsabilidad:** representa la valoración numérica con una estrella y texto legible.
+- **Responsabilidad:** representa la valoración numérica con una estrella y, cuando se proporciona, el recuento de reseñas.
 - **Props:**
 	```ts
 	interface StarRatingProps {
@@ -241,8 +241,9 @@ En móvil, el contenido se apila en una columna con márgenes laterales de 16px.
 	}
 	```
 - **Estado:** ninguno.
-- **Layout:** hijo de `PropertyCard`, junto a los datos del alojamiento; estrella y valoración alineadas en una fila con gap pequeño en todos los tamaños.
-- **Tailwind:** `inline-flex items-center gap-1`, texto de 13–14px en `#222`; estrella oscura o negra, tamaño 12–14px. `reviewCount` solo se presenta si se decide mostrarlo en la tarjeta.
+- **Layout:** se usa en `PropertyCard` y `RoomHeader`, junto a sus datos; estrella y valoración alineadas en una fila con gap pequeño en todos los tamaños. `PropertyCard` no pasa `reviewCount`; `RoomHeader` sí lo pasa.
+- **Contenido:** si `reviewCount` está definido, muestra `★ {rating} · {reviewCount} reseñas`; si no, muestra solo `★ {rating}`.
+- **Tailwind:** `inline-flex items-center gap-1`, texto de 13–14px en `#222`; estrella oscura o negra, tamaño 12–14px.
 
 ##### LoadingSpinner
 - **Archivo:** `components/LoadingSpinner.tsx`.
@@ -440,10 +441,10 @@ La forma de `Property` es exactamente la definida en 4.1 y no se vuelve a declar
 
 #### Propuesta de cambio a componente compartido
 
-Sin modificar la especificación de 4.1, proponer que `PropertyGrid` acepte `columns?: 1 | 2 | 3`, que determina el número de columnas desde `md` en adelante y conserva una columna en móvil. Resolver `columns` con un objeto que mapee cada valor a clases Tailwind literales completas (por ejemplo, `1: "md:grid-cols-1"`, `2: "md:grid-cols-2"`, `3: "md:grid-cols-3"`); nunca interpolar clases como `md:grid-cols-${columns}`. Si se omite, mantiene el comportamiento responsive actual de Home; Catálogo pasaría `columns={2}` para mantener dos tarjetas por fila en el panel de resultados de escritorio.
+Proponer que `PropertyGrid` acepte `columns?: 2`. Sin `columns`, usa `md:grid-cols-2 lg:grid-cols-3`; con `columns={2}`, usa solo `md:grid-cols-2` y conserva una columna en móvil. Seleccionar las clases Tailwind literales completas mediante un objeto (por ejemplo, `{ default: "md:grid-cols-2 lg:grid-cols-3", 2: "md:grid-cols-2" }`), sin construir clases dinámicamente. Catálogo pasaría `columns={2}` para mantener dos tarjetas por fila en el panel de resultados de escritorio.
 
 ### 4.3 Detalle de habitación
-Capturas usadas: `room-375.png`, `room-375-details.png` y captura adjunta de escritorio (el nombre del archivo no se muestra en el adjunto; encabezado visible: “E2- Sta Lucía-Barrio Antiguo”).
+Capturas usadas: `room-375.png`, `room-375-details.png` y `room-desktop.png` (adjunto, también en `docs/screenshots/`).
 
 <details><summary>Prompt usado</summary>
 
@@ -494,6 +495,8 @@ FORMATO DE SALIDA: escribe la especificación en context.md, en la subsección "
 
 `app/rooms/[id]/page.tsx` es una página cliente y obtiene `id` con `useParams` de `next/navigation`. Mantiene `room: Room | null` (inicialmente `null`) e `isLoading` (inicialmente `true`). Un `useEffect` dependiente de `id` programa un `setTimeout` de 1 segundo, busca el alojamiento en el arreglo mock, asigna `room` y pone `isLoading` en `false`; la limpieza del efecto cancela el temporizador. La página conserva `Navbar` en la parte superior y presenta uno de estos estados: carga con `LoadingSpinner`, habitación inexistente con el mensaje “Habitación no encontrada” y `BackLink`, o contenido del alojamiento.
 
+**Para la implementación:** usar `useParams<{ id: string }>()`; no llamar a `setState` de forma síncrona en el cuerpo del efecto, solo dentro del callback del `setTimeout`.
+
 ```text
 Página cliente: app/rooms/[id]/page.tsx
 ├── Navbar (compartido; sin query ni onQueryChange)
@@ -514,7 +517,7 @@ Página cliente: app/rooms/[id]/page.tsx
 						└── GuestCounter
 ```
 
-En móvil (375px), una sola columna: `BackLink`, galería, cabecera, anfitrión, amenities y tarjeta de reserva al final del contenido. La `BookingCard` no es una barra fija. Desde `md` (768px), la galería va a ancho completo y debajo el contenido se divide en dos columnas: datos a la izquierda y reserva sticky a la derecha. La captura de escritorio muestra aproximadamente una proporción 3:2 entre esas columnas: el detalle mantiene el área mayor y la tarjeta de reserva una columna más estrecha.
+En móvil (375px), una sola columna: `BackLink`, galería, cabecera, anfitrión, amenities y tarjeta de reserva al final del contenido. La `BookingCard` no es una barra fija. Desde `md` (768px), la galería va a ancho completo y debajo el contenido usa `grid md:grid-cols-3`: datos a la izquierda con `md:col-span-2` y `BookingCard` en la tercera columna. La proporción 2:1 refleja `room-desktop.png`, donde el contenido ocupa el espacio mayor y la reserva una columna más estrecha. `md:self-start` evita que la celda de grid estire la tarjeta a la altura de la columna, dejando espacio para que `sticky` funcione.
 
 #### Componentes compartidos
 
@@ -544,8 +547,8 @@ En móvil (375px), una sola columna: `BackLink`, galería, cabecera, anfitrión,
 	}
 	```
 - **Estado:** `currentIndex` vive en `RoomGallery`, con `useState(0)`; Anterior y Siguiente actualizan el índice circularmente y el contador muestra el índice visible y el total (`1 / N`).
-- **Layout:** hijo de la página, después de `BackLink` y antes del contenido. En móvil muestra el placeholder actual a ancho completo con proporción 4:3. Desde `md`, el área queda a ancho completo y con esquinas redondeadas; usa una grilla mosaico como en la captura: foto principal grande a la izquierda y cuatro espacios menores en dos filas a la derecha. Los controles Anterior/Siguiente y el contador siguen disponibles y operan sobre el índice actual.
-- **Tailwind:** `relative w-full aspect-[4/3] overflow-hidden`; placeholders `bg-neutral-200` con “Foto N” centrado en gris. En escritorio, `md:aspect-[2/1] md:grid md:grid-cols-4 md:grid-rows-2`, con la foto principal ocupando dos columnas y dos filas; `md:rounded-xl`. Controles en botones compactos con contraste suficiente y `aria-label` (“Anterior” y “Siguiente”); contador discreto sobre la galería. Sin imágenes externas.
+- **Layout:** hijo de la página, después de `BackLink` y antes del contenido. En todos los tamaños muestra una sola foto placeholder con proporción 4:3; incluye los botones Anterior/Siguiente y el contador `1 / N`, que operan sobre el índice actual.
+- **Tailwind:** `relative w-full aspect-[4/3] overflow-hidden`; placeholder `bg-neutral-200` con “Foto N” centrado en gris. En escritorio, `md:max-w-3xl md:rounded-xl md:mx-auto`. Botones compactos con contraste suficiente y `aria-label` (“Anterior” y “Siguiente”); contador discreto. Sin imágenes externas. El mosaico de Airbnb queda fuera de alcance porque el ejercicio pide navegación por índice.
 
 ##### RoomHeader
 
@@ -559,7 +562,7 @@ En móvil (375px), una sola columna: `BackLink`, galería, cabecera, anfitrión,
 	```
 - **Estado:** ninguno; recibe la habitación desde la página.
 - **Layout:** hijo del contenido principal y primero en orden, encima de `HostInfo` y `AmenitiesList`. En móvil, columna con título, ubicación y valoración; desde `md` mantiene la columna izquierda y permite que el título ocupe el ancho disponible.
-- **Tailwind:** `flex flex-col gap-2`, título de 20–24px semibold, ubicación y reseñas en 14px neutral. Usa `StarRating` compartido con `room.rating` y `room.reviewCount`; no duplica las estrellas ni el total de reseñas.
+- **Tailwind:** `flex flex-col gap-2`, título de 20–24px semibold, ubicación en 14px neutral. Usa `StarRating` compartido con `room.rating` y `room.reviewCount`, que muestra la valoración y el recuento de reseñas; no los duplica en texto separado.
 
 ##### HostInfo
 
@@ -615,7 +618,7 @@ En móvil (375px), una sola columna: `BackLink`, galería, cabecera, anfitrión,
 	}
 	```
 - **Estado:** `guests` vive en `BookingCard` con `useState(1)` y se pasa como valor controlado a `GuestCounter`; su cambio actualiza ese estado. El botón “Reservar” no navega ni inicia otro flujo.
-- **Layout:** hija de la columna de reserva, después de la galería y junto al contenido principal desde `md`; en escritorio es sticky durante el scroll. En móvil aparece como tarjeta normal al final de la columna, nunca fija ni superpuesta al contenido. Incluye precio, contador y CTA en disposición vertical.
+- **Layout:** hija de la tercera columna del grid `md:grid-cols-3`, después de la galería y junto al contenido principal desde `md`; la columna de contenido ocupa `md:col-span-2`. En escritorio usa `md:sticky md:top-24 md:self-start`; `self-start` evita que la celda de grid estire la tarjeta e impida su desplazamiento sticky. En móvil aparece como tarjeta normal al final de la columna, nunca fija ni superpuesta al contenido. Incluye precio, contador y CTA en disposición vertical.
 - **Tailwind:** `rounded-xl border border-neutral-200 bg-white p-5 shadow-md`; precio destacado de 20–24px semibold seguido de “por noche”; contador y CTA con separación vertical. Botón ancho completo, fondo oscuro y texto blanco, altura táctil cómoda.
 
 ##### GuestCounter
@@ -675,7 +678,7 @@ El arreglo canónico de datos mock será `Room[]` en `data/rooms.ts`. Home y Cat
 
 #### Propuestas
 
-- Si `RoomGallery` supera aproximadamente 80 líneas al combinar el mosaico responsive y la navegación, proponer dividir sus controles en `GalleryControls` (`components/GalleryControls.tsx`), sin incluirlo en el árbol base hasta que sea necesario. Sería responsable de los botones accesibles y el contador; recibiría `currentIndex`, `total` y `onNavigate`, sin estado propio. El layout sería una fila compacta superpuesta o debajo de la galería según el breakpoint, con botones táctiles y contador legible. Esta propuesta se limita a mantener cada componente por debajo del máximo aproximado y no cambia los demás nombres ni contratos.
+- Si `RoomGallery` supera ~80 líneas, dividir sus botones en un componente aparte.
 
 ## 5. Decisiones técnicas
 - Diseño mobile-first, tomando 375px como referencia y usando `md` (768px) como breakpoint para desktop.
