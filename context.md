@@ -319,7 +319,7 @@ Campos que presenta la tarjeta en Home: placeholder de imagen, título, precio p
 ### 4.2 Catálogo
 Capturas usadas: `catalog-375.png` (375px) y `catalog-desktop.png` (escritorio).
 
-La especificación de escritorio fue contrastada con `catalog-desktop.png`: coincide el mapa en la columna derecha, dos tarjetas por fila y el reparto aproximado 3/2; el comportamiento sticky se mantiene como requisito funcional.
+La medición visual de `catalog-desktop.png` (3168 × 1788 px) muestra que la lista y el mapa ocupan anchos aproximadamente iguales, cerca de la mitad del área de contenido cada uno; por eso el layout de escritorio usa `grid md:grid-cols-2`. El comportamiento sticky se mantiene como requisito funcional.
 
 <details>
 <summary>Prompt usado</summary>
@@ -366,7 +366,7 @@ No toques ninguna otra parte de context.md ni ningún otro archivo.
 
 La página cliente de `app/catalog/page.tsx` posee el único estado de esta vista, creado con `useState`: `sortOrder`, inicializado en `"asc"`. En `types/` se define `type SortOrder = "asc" | "desc";`, usado tanto por la página del catálogo como por `CatalogHeader`. Los datos mock usan el tipo `Property` ya definido en 4.1. La lista visible se deriva ordenando una copia del arreglo con `[...properties].sort` por `pricePerNight` en cada dirección, sin mutar los datos mock ni guardar un arreglo ordenado en estado; no hay carga simulada. `CatalogHeader` recibe el total de resultados, `sortOrder` y el callback de orden. En el catálogo, `Navbar` reutiliza exactamente sus props de 4.1 y se renderiza sin `query` ni `onQueryChange`, pues no se solicita un filtro de texto aquí.
 
-En móvil, la página apila cabecera, resultados y mapa en una columna. Desde `md`, una grilla de dos columnas coloca el panel de resultados a la izquierda y el mapa a la derecha. La proporción aproximada 3/2 concuerda con la captura de escritorio: el panel aloja dos tarjetas por fila y el mapa ocupa la columna derecha amplia.
+En móvil, la página apila cabecera, resultados y mapa en una columna. Desde `md`, `grid md:grid-cols-2` coloca el panel de resultados a la izquierda y el mapa a la derecha, a partes iguales según la medición de `catalog-desktop.png`.
 
 ```text
 Página cliente: app/catalog/page.tsx
@@ -410,8 +410,8 @@ Página cliente: app/catalog/page.tsx
 - **Responsabilidad:** reserva el espacio visual del mapa y muestra la etiqueta “Mapa”, sin cargar un mapa real.
 - **Props:** sin props.
 - **Estado:** ninguno; no hay interacción ni carga de mapas.
-- **Layout:** hijo directo del layout principal. En móvil queda debajo de las tarjetas, a ancho completo y con altura fija aproximada de `h-64`. Desde `md` queda a la derecha del panel, con `md:sticky md:self-start` y altura visible para permanecer fijo durante el scroll; se necesita `md:self-start` porque, sin eso, el sticky no funciona dentro de una celda de grid estirada. El panel de resultados queda a la izquierda en una grilla 3/2.
-- **Tailwind:** fondo gris neutro claro (`bg-neutral-200` o próximo), texto centrado `#717171` de 14–16px, radio de 8–12px; `h-64` en móvil y `md:sticky md:self-start md:top-24 md:h-[calc(100vh-6rem)]` en escritorio. Sin tiles, controles ni sombra decorativa.
+- **Layout:** hijo directo del layout principal. En móvil queda debajo de las tarjetas, a ancho completo y con altura fija aproximada de `h-64`. Desde `md` queda a la derecha del panel, en la segunda columna de un `grid md:grid-cols-2` de anchos iguales; usa `md:sticky md:self-start md:top-24` para permanecer fijo durante el scroll. `md:self-start` evita que el elemento se estire para llenar la altura de la fila del grid, permitiendo el movimiento sticky.
+- **Tailwind:** fondo gris neutro claro (`bg-neutral-200` o próximo), texto centrado `#717171` de 14–16px, radio de 8–12px; `h-64` en móvil y `md:rounded-2xl md:sticky md:self-start md:top-24 md:h-[calc(100vh-6rem)]` en escritorio. Sin tiles, controles ni sombra decorativa.
 
 #### Datos visibles
 
