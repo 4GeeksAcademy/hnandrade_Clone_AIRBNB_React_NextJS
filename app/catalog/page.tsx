@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import CatalogHeader from "@/components/CatalogHeader";
-import MapPlaceholder from "@/components/MapPlaceholder";
+import CatalogMap from "@/components/CatalogMap";
 import Navbar from "@/components/Navbar";
 import PropertyGrid from "@/components/PropertyGrid";
 import { rooms } from "@/data/rooms";
@@ -24,7 +24,9 @@ const CatalogPage = () => {
 					<CatalogHeader onSortChange={setSortOrder} sortOrder={sortOrder} total={sortedRooms.length} />
 					<PropertyGrid columns={2} properties={sortedRooms} />
 				</section>
-				<MapPlaceholder />
+				<div className="relative z-0 h-64 overflow-hidden rounded-xl md:sticky md:top-24 md:self-start md:h-[calc(100vh-6rem)] md:rounded-2xl">
+					<CatalogMap properties={sortedRooms} />
+				</div>
 			</main>
 		</>
 	);

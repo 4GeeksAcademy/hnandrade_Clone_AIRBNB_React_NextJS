@@ -689,3 +689,12 @@ El arreglo canónico de datos mock será `Room[]` en `data/rooms.ts`. Home y Cat
 - Componentes declarados como `const`, de máximo aproximado 80 líneas.
 - Navegación entre vistas con `<Link>`.
 - Sin `style={{}}` en línea.
+
+## 6. Retos opcionales
+
+### 6.1 Mapa interactivo
+
+- **Librerías:** `leaflet` y `react-leaflet` v5; `@types/leaflet` como dependencia de desarrollo.
+- **Componentes nuevos:** `PriceMarker` presenta el precio y el popup de cada alojamiento; `PropertyMap` monta el mapa de OpenStreetMap y ajusta sus bounds a las coordenadas disponibles; `CatalogMap` carga `PropertyMap` en cliente con `next/dynamic` y `ssr: false`, usando `MapPlaceholder` como fallback.
+- **Coordenadas:** `Property` incluye `coordinates: { lat: number; lng: number }`; cada alojamiento mock guarda coordenadas aproximadas de su ciudad o zona para posicionar el marcador.
+- **Iconos de precio:** se usa `L.divIcon` con una píldora HTML estilizada con clases Tailwind, evitando los iconos de imagen predeterminados de Leaflet, cuyas rutas de assets no se resuelven correctamente en Next.js.
