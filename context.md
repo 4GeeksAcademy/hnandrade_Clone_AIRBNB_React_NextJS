@@ -125,7 +125,7 @@ En móvil, el contenido se apila en una columna con márgenes laterales de 16px.
 		onQueryChange?: (query: string) => void;
 	}
 	```
-- **Estado:** no mantiene estado propio; recibe `query` y `onQueryChange` desde la página y los pasa a `SearchBar`. Si `query` es `undefined`, el campo usa `query ?? ""` para mantenerse controlado. En Catálogo y Detalle se usa sin `onQueryChange`.
+- **Estado:** no mantiene estado propio; recibe `query` y `onQueryChange` desde la página y los pasa a `SearchBar`. Si `query` es `undefined`, el input usa `query ?? ""` y `readOnly={!onQueryChange}` para mantenerse controlado y de solo lectura. En Catálogo y Detalle se usa sin `onQueryChange`.
 - **Layout:** padre de `Logo`, `SearchBar` y `UserMenu`; en 375px es una columna compacta, con la búsqueda ocupando el ancho disponible y logo/menú alineados en la cabecera; desde `md`, fila con logo a la izquierda, búsqueda centrada y menú a la derecha. Gap de 12–16px.
 - **Tailwind:** fondo blanco, `px-4 py-3`, borde inferior gris muy claro; búsqueda con mayor espacio disponible en desktop.
 
@@ -147,7 +147,7 @@ En móvil, el contenido se apila en una columna con márgenes laterales de 16px.
 		onQueryChange?: (query: string) => void;
 	}
 	```
-- **Estado:** no usa estado local; es un campo controlado por `query` de la página y llama `onQueryChange` en cada cambio. Si `query` es `undefined`, usa `query ?? ""` como valor para que el input siga controlado; en Catálogo y Detalle se usa sin `onQueryChange`.
+- **Estado:** no usa estado local; es un campo controlado por `query` de la página y llama `onQueryChange` en cada cambio. Si `query` es `undefined`, usa `query ?? ""`; el input usa `readOnly={!onQueryChange}` para seguir controlado y quedar de solo lectura cuando no hay callback. En Catálogo y Detalle se usa sin `onQueryChange`.
 - **Layout:** hijo de `Navbar`; ancho completo en móvil y ancho limitado/centrado en escritorio. Contiene el texto de búsqueda y un icono de búsqueda inline, alineados en fila.
 - **Tailwind:** `flex`, `items-center`, `gap-3`, `rounded-full`, `border border-neutral-300`, fondo blanco, `px-5 py-3`; sombra ligera (`shadow-sm`), texto 14px y placeholder gris medio.
 
@@ -312,13 +312,13 @@ Campos que presenta la tarjeta en Home: placeholder de imagen, título, precio p
 - La categoría inicial es `all`; las opciones y `Property.category` usan los slugs acordados.
 - El filtrado derivado combina categoría y query normalizada contra título o ubicación.
 - `Logo` y `UserMenu` no reciben props.
-- `Navbar` y `SearchBar` mantienen el input controlado ante `query` indefinida; en Catálogo y Detalle no se pasa `onQueryChange`.
+- `Navbar` y `SearchBar` mantienen el input controlado con `query ?? ""` y `readOnly={!onQueryChange}`; en Catálogo y Detalle no se pasa `onQueryChange`.
 - `EmptyState` usa un mensaje genérico si `query` está vacía y no hay resultados por categoría.
 
 ### 4.2 Catálogo
 Capturas usadas: `catalog-375.png` (375px) y `catalog-desktop.png` (escritorio).
 
-Nota de referencia: `catalog-desktop.png` no está disponible en `docs/screenshots/` en este workspace; solo se encontró `catalog-375.png`. La distribución de escritorio de esta especificación sigue el alcance indicado y queda pendiente de contraste visual con esa captura.
+La especificación de escritorio fue contrastada con `catalog-desktop.png`: coincide el mapa en la columna derecha, dos tarjetas por fila y el reparto aproximado 3/2; el comportamiento sticky se mantiene como requisito funcional.
 
 <details>
 <summary>Prompt usado</summary>
@@ -363,9 +363,9 @@ No toques ninguna otra parte de context.md ni ningún otro archivo.
 
 #### Estructura de página
 
-La página cliente de `app/catalog/page.tsx` posee el único estado de esta vista, creado con `useState`: `sortOrder`, inicializado en `"asc"`. Los datos mock usan el tipo `Property` ya definido en 4.1. La lista visible se calcula ordenando los datos por `pricePerNight` en cada dirección; no se guarda un arreglo ordenado en estado y no hay estado ni carga simulada. `CatalogHeader` recibe el total de resultados, `sortOrder` y el callback de orden. En el catálogo, `Navbar` reutiliza exactamente sus props de 4.1 y se renderiza sin `query` ni `onQueryChange`, pues no se solicita un filtro de texto aquí.
+La página cliente de `app/catalog/page.tsx` posee el único estado de esta vista, creado con `useState`: `sortOrder`, inicializado en `"asc"`. En `types/` se define `type SortOrder = "asc" | "desc";`, usado tanto por la página del catálogo como por `CatalogHeader`. Los datos mock usan el tipo `Property` ya definido en 4.1. La lista visible se deriva ordenando una copia del arreglo con `[...properties].sort` por `pricePerNight` en cada dirección, sin mutar los datos mock ni guardar un arreglo ordenado en estado; no hay carga simulada. `CatalogHeader` recibe el total de resultados, `sortOrder` y el callback de orden. En el catálogo, `Navbar` reutiliza exactamente sus props de 4.1 y se renderiza sin `query` ni `onQueryChange`, pues no se solicita un filtro de texto aquí.
 
-En móvil, la página apila cabecera, resultados y mapa en una columna. Desde `md`, una grilla de dos columnas coloca el panel de resultados a la izquierda y el mapa a la derecha. Se propone una proporción aproximada 3/2: deja espacio a dos tarjetas dentro del panel y mantiene un mapa amplio, siguiendo la disposición descrita para escritorio.
+En móvil, la página apila cabecera, resultados y mapa en una columna. Desde `md`, una grilla de dos columnas coloca el panel de resultados a la izquierda y el mapa a la derecha. La proporción aproximada 3/2 concuerda con la captura de escritorio: el panel aloja dos tarjetas por fila y el mapa ocupa la columna derecha amplia.
 
 ```text
 Página cliente: app/catalog/page.tsx
@@ -394,8 +394,8 @@ Página cliente: app/catalog/page.tsx
 	```ts
 	interface CatalogHeaderProps {
 		total: number;
-		sortOrder: "asc" | "desc";
-		onSortChange: (sortOrder: "asc" | "desc") => void;
+		sortOrder: SortOrder;
+		onSortChange: (sortOrder: SortOrder) => void;
 	}
 	```
 - **Estado:** no mantiene estado local; el `sortOrder` controlado vive en `app/catalog/page.tsx` y se actualiza mediante `onSortChange`.
@@ -407,13 +407,10 @@ Página cliente: app/catalog/page.tsx
 
 - **Archivo:** `components/MapPlaceholder.tsx`.
 - **Responsabilidad:** reserva el espacio visual del mapa y muestra la etiqueta “Mapa”, sin cargar un mapa real.
-- **Props:**
-	```ts
-	interface MapPlaceholderProps {}
-	```
+- **Props:** sin props.
 - **Estado:** ninguno; no hay interacción ni carga de mapas.
-- **Layout:** hijo directo del layout principal. En móvil queda debajo de las tarjetas, a ancho completo y con altura fija aproximada de `h-64`. Desde `md` queda a la derecha del panel, estirado a la altura visible y con `sticky`/`top` para permanecer fijo durante el scroll; el panel de resultados queda a la izquierda en una grilla 3/2.
-- **Tailwind:** fondo gris neutro claro (`bg-neutral-200` o próximo), texto centrado `#717171` de 14–16px, radio de 8–12px; `h-64` en móvil y `md:sticky md:top-24 md:h-[calc(100vh-6rem)]` en escritorio. Sin tiles, controles ni sombra decorativa.
+- **Layout:** hijo directo del layout principal. En móvil queda debajo de las tarjetas, a ancho completo y con altura fija aproximada de `h-64`. Desde `md` queda a la derecha del panel, con `md:sticky md:self-start` y altura visible para permanecer fijo durante el scroll; se necesita `md:self-start` porque, sin eso, el sticky no funciona dentro de una celda de grid estirada. El panel de resultados queda a la izquierda en una grilla 3/2.
+- **Tailwind:** fondo gris neutro claro (`bg-neutral-200` o próximo), texto centrado `#717171` de 14–16px, radio de 8–12px; `h-64` en móvil y `md:sticky md:self-start md:top-24 md:h-[calc(100vh-6rem)]` en escritorio. Sin tiles, controles ni sombra decorativa.
 
 #### Datos visibles
 
@@ -443,7 +440,7 @@ La forma de `Property` es exactamente la definida en 4.1 y no se vuelve a declar
 
 #### Propuesta de cambio a componente compartido
 
-Sin modificar la especificación de 4.1, proponer que `PropertyGrid` acepte `columns?: 1 | 2 | 3`, que determina el número de columnas desde `md` en adelante y conserva una columna en móvil. Si se omite, mantiene el comportamiento responsive actual de Home; Catálogo pasaría `columns={2}` para mantener dos tarjetas por fila en el panel de resultados de escritorio.
+Sin modificar la especificación de 4.1, proponer que `PropertyGrid` acepte `columns?: 1 | 2 | 3`, que determina el número de columnas desde `md` en adelante y conserva una columna en móvil. Resolver `columns` con un objeto que mapee cada valor a clases Tailwind literales completas (por ejemplo, `1: "md:grid-cols-1"`, `2: "md:grid-cols-2"`, `3: "md:grid-cols-3"`); nunca interpolar clases como `md:grid-cols-${columns}`. Si se omite, mantiene el comportamiento responsive actual de Home; Catálogo pasaría `columns={2}` para mantener dos tarjetas por fila en el panel de resultados de escritorio.
 
 ### 4.3 Detalle de habitación
 (pendiente)
