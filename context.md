@@ -443,7 +443,239 @@ La forma de `Property` es exactamente la definida en 4.1 y no se vuelve a declar
 Sin modificar la especificación de 4.1, proponer que `PropertyGrid` acepte `columns?: 1 | 2 | 3`, que determina el número de columnas desde `md` en adelante y conserva una columna en móvil. Resolver `columns` con un objeto que mapee cada valor a clases Tailwind literales completas (por ejemplo, `1: "md:grid-cols-1"`, `2: "md:grid-cols-2"`, `3: "md:grid-cols-3"`); nunca interpolar clases como `md:grid-cols-${columns}`. Si se omite, mantiene el comportamiento responsive actual de Home; Catálogo pasaría `columns={2}` para mantener dos tarjetas por fila en el panel de resultados de escritorio.
 
 ### 4.3 Detalle de habitación
-(pendiente)
+Capturas usadas: `room-375.png`, `room-375-details.png` y captura adjunta de escritorio (el nombre del archivo no se muestra en el adjunto; encabezado visible: “E2- Sta Lucía-Barrio Antiguo”).
+
+<details><summary>Prompt usado</summary>
+
+```text
+Te adjunto tres capturas de Airbnb: room-375.png y room-375-details.png (móvil, 375px de ancho) y room-desktop.png (escritorio). Están en docs/screenshots/. Es la vista DETALLE DE HABITACIÓN, ruta "/rooms/[id]".
+
+IMPORTANTE: si alguna de las tres capturas no se puede leer, DETENTE y dímelo antes de escribir nada. No especules sobre lo que no ves.
+
+Antes de empezar, lee las subsecciones 4.1 y 4.2 de context.md. REUTILIZA sin cambios Navbar, StarRating, LoadingSpinner y la interface Property. No las redefinas: refiérete a ellas. Si necesitas cambios en ellas, propónlos al final.
+
+Analiza las imágenes y genera una ESPECIFICACIÓN DE COMPONENTES en Markdown. No escribas la implementación, solo la especificación.
+
+Usa EXACTAMENTE estos nombres, definidos en la sección 2: Navbar (compartido), BackLink, RoomGallery, RoomHeader, HostInfo, AmenitiesList, AmenityItem, BookingCard, GuestCounter, StarRating (compartido) y LoadingSpinner (compartido). No inventes componentes; si falta alguno, propónlo al final.
+
+Para cada componente NUEVO indica:
+1. Nombre y archivo (components/Nombre.tsx).
+2. Responsabilidad en una frase.
+3. Props como interface de TypeScript (si no tiene props, escribe "sin props" y no declares una interface vacía).
+4. Estado local (useState/useEffect) y si vive en el componente o en la página.
+5. Relación de layout: padre, hijos y disposición (flex/grid, dirección, gap, alineación) en móvil (375px) y en escritorio (md: 768px+).
+6. Pistas de Tailwind tomadas de las capturas.
+Para los compartidos, indica solo cómo se usan aquí.
+
+Además incluye:
+- Árbol jerárquico ASCII de la página.
+- Interface Room (extiende Property, sin redeclarar sus campos) con al menos: host (name, yearsHosting), amenities (lista con id, label e icono emoji), maxGuests, bedrooms, beds y bathrooms. Define Host y Amenity como tipos separados en types/. Propón dónde viven los datos mock: un único arreglo Room[] en data/ cuyos ids coincidan con los de Home y Catálogo, para que todos los enlaces a /rooms/[id] funcionen.
+- Una lista de elementos de las capturas que NO vamos a implementar (banner de descarga de la app, compartir, guardar, "Mostrar todas las fotos", calendario, precios tachados, descuentos, desglose de precio, reseñas detalladas, etc.).
+
+ALCANCE de esta vista:
+- La página app/rooms/[id]/page.tsx es cliente ("use client") y obtiene el id con useParams de next/navigation. Estados en la página: room (Room | null, inicia en null) e isLoading (inicia en true). Un useEffect al montar (dependiente del id) hace setTimeout de 1 segundo, busca la habitación en los datos mock por id, asigna room, pone isLoading en false y limpia el temporizador al desmontar.
+- Tres estados de la página: cargando (LoadingSpinner), no encontrada (mensaje "Habitación no encontrada" con BackLink) y contenido.
+- BackLink: <Link> a /catalog con texto "← Volver al catálogo", en la parte superior. Nunca <a>.
+- RoomGallery: recibe images (string[]) como placeholders (divs grises con el texto "Foto N", sin imágenes externas). El índice actual vive en RoomGallery con useState, inicia en 0. Botones Anterior y Siguiente con navegación circular (del último vuelve al primero) y contador "1 / N". Botones con aria-label. En móvil ocupa todo el ancho con aspect-[4/3]; en escritorio, ancho contenido con esquinas redondeadas.
+- RoomHeader: título, StarRating, número de reseñas y ubicación.
+- HostInfo: avatar placeholder (círculo gris con la inicial), "Anfitrión: {nombre}" y "{n} años como anfitrión".
+- AmenitiesList: título de sección y cuadrícula de AmenityItem (icono emoji + etiqueta), 1 o 2 columnas en móvil y 2 desde md.
+- BookingCard: precio POR NOCHE (no "en total"), GuestCounter y botón CTA "Reservar". El estado guests vive en BookingCard con useState, inicia en 1. GuestCounter es controlado: recibe value, min (1), max (room.maxGuests) y onChange; los botones − y + se deshabilitan en los límites y muestran el número entre ellos. El botón CTA no navega a ningún sitio.
+- Layout de la página: en móvil, una columna (BackLink, RoomGallery, RoomHeader, HostInfo, AmenitiesList, BookingCard al final). Desde md, dos columnas bajo la galería: contenido a la izquierda (RoomHeader, HostInfo, AmenitiesList) y BookingCard a la derecha, con sticky. Justifica la proporción con room-desktop.png. Para BookingCard, indica que en móvil va como tarjeta al final del contenido y no como barra fija, para no tapar contenido.
+- El Navbar se usa sin query ni onQueryChange (input de solo lectura).
+
+REGLAS: mobile-first, solo Tailwind (sin style inline), sin librerías de componentes, un componente por archivo, máximo ~80 líneas por componente (si alguno puede pasarse, propón dividirlo), componentes const, sin interfaces vacías.
+
+FORMATO DE SALIDA: escribe la especificación en context.md, en la subsección "4.3 Detalle de habitación", reemplazando "(pendiente)". Al inicio incluye los nombres de las tres capturas usadas y este mismo prompt dentro de <details><summary>Prompt usado</summary> ... </details>. No toques ninguna otra parte de context.md ni ningún otro archivo.
+```
+</details>
+
+#### Estructura de página
+
+`app/rooms/[id]/page.tsx` es una página cliente y obtiene `id` con `useParams` de `next/navigation`. Mantiene `room: Room | null` (inicialmente `null`) e `isLoading` (inicialmente `true`). Un `useEffect` dependiente de `id` programa un `setTimeout` de 1 segundo, busca el alojamiento en el arreglo mock, asigna `room` y pone `isLoading` en `false`; la limpieza del efecto cancela el temporizador. La página conserva `Navbar` en la parte superior y presenta uno de estos estados: carga con `LoadingSpinner`, habitación inexistente con el mensaje “Habitación no encontrada” y `BackLink`, o contenido del alojamiento.
+
+```text
+Página cliente: app/rooms/[id]/page.tsx
+├── Navbar (compartido; sin query ni onQueryChange)
+├── [si isLoading] LoadingSpinner (compartido)
+├── [si room no existe] BackLink
+│   └── Mensaje “Habitación no encontrada”
+└── [si existe room]
+		├── BackLink
+		├── RoomGallery
+		└── Layout de contenido
+				├── Contenido principal
+				│   ├── RoomHeader
+				│   │   └── StarRating (compartido)
+				│   ├── HostInfo
+				│   └── AmenitiesList
+				│       └── AmenityItem (uno por amenity)
+				└── BookingCard
+						└── GuestCounter
+```
+
+En móvil (375px), una sola columna: `BackLink`, galería, cabecera, anfitrión, amenities y tarjeta de reserva al final del contenido. La `BookingCard` no es una barra fija. Desde `md` (768px), la galería va a ancho completo y debajo el contenido se divide en dos columnas: datos a la izquierda y reserva sticky a la derecha. La captura de escritorio muestra aproximadamente una proporción 3:2 entre esas columnas: el detalle mantiene el área mayor y la tarjeta de reserva una columna más estrecha.
+
+#### Componentes compartidos
+
+- **`Navbar`**: reutilizar exactamente el componente y sus props de 4.1; aquí no se pasan `query` ni `onQueryChange`, por lo que el input queda de solo lectura.
+- **`StarRating`**: reutilizar exactamente el componente y sus props de 4.1; `RoomHeader` le pasa `room.rating` y `room.reviewCount`.
+- **`LoadingSpinner`**: reutilizar exactamente el componente de 4.1 durante el estado de carga de la página.
+
+#### Componentes nuevos
+
+##### BackLink
+
+- **Archivo:** `components/BackLink.tsx`.
+- **Responsabilidad:** ofrece navegación de regreso al catálogo con un enlace de Next.js.
+- **Props:** sin props.
+- **Estado:** ninguno.
+- **Layout:** hijo de la página, al comienzo del contenido tanto en móvil como en escritorio; una fila alineada al inicio, antes de la galería. En el estado no encontrado aparece encima del mensaje.
+- **Tailwind:** `inline-flex items-center`, gap pequeño, `py-3`, texto 14px y neutral oscuro; foco visible. El texto es “← Volver al catálogo” y el destino es `/catalog`; usar `<Link>`, nunca `<a>`.
+
+##### RoomGallery
+
+- **Archivo:** `components/RoomGallery.tsx`.
+- **Responsabilidad:** muestra placeholders de las fotos y controles accesibles para recorrerlos circularmente.
+- **Props:**
+	```ts
+	interface RoomGalleryProps {
+		images: string[];
+	}
+	```
+- **Estado:** `currentIndex` vive en `RoomGallery`, con `useState(0)`; Anterior y Siguiente actualizan el índice circularmente y el contador muestra el índice visible y el total (`1 / N`).
+- **Layout:** hijo de la página, después de `BackLink` y antes del contenido. En móvil muestra el placeholder actual a ancho completo con proporción 4:3. Desde `md`, el área queda a ancho completo y con esquinas redondeadas; usa una grilla mosaico como en la captura: foto principal grande a la izquierda y cuatro espacios menores en dos filas a la derecha. Los controles Anterior/Siguiente y el contador siguen disponibles y operan sobre el índice actual.
+- **Tailwind:** `relative w-full aspect-[4/3] overflow-hidden`; placeholders `bg-neutral-200` con “Foto N” centrado en gris. En escritorio, `md:aspect-[2/1] md:grid md:grid-cols-4 md:grid-rows-2`, con la foto principal ocupando dos columnas y dos filas; `md:rounded-xl`. Controles en botones compactos con contraste suficiente y `aria-label` (“Anterior” y “Siguiente”); contador discreto sobre la galería. Sin imágenes externas.
+
+##### RoomHeader
+
+- **Archivo:** `components/RoomHeader.tsx`.
+- **Responsabilidad:** resume el título, la ubicación y los datos de valoración de la habitación.
+- **Props:**
+	```ts
+	interface RoomHeaderProps {
+		room: Room;
+	}
+	```
+- **Estado:** ninguno; recibe la habitación desde la página.
+- **Layout:** hijo del contenido principal y primero en orden, encima de `HostInfo` y `AmenitiesList`. En móvil, columna con título, ubicación y valoración; desde `md` mantiene la columna izquierda y permite que el título ocupe el ancho disponible.
+- **Tailwind:** `flex flex-col gap-2`, título de 20–24px semibold, ubicación y reseñas en 14px neutral. Usa `StarRating` compartido con `room.rating` y `room.reviewCount`; no duplica las estrellas ni el total de reseñas.
+
+##### HostInfo
+
+- **Archivo:** `components/HostInfo.tsx`.
+- **Responsabilidad:** presenta el nombre del anfitrión y sus años de experiencia en la plataforma.
+- **Props:**
+	```ts
+	interface HostInfoProps {
+		host: Host;
+	}
+	```
+- **Estado:** ninguno.
+- **Layout:** hijo del contenido principal, debajo de `RoomHeader`; avatar y textos en una fila con alineación vertical centrada en móvil y escritorio.
+- **Tailwind:** `flex items-center gap-3 border-b border-neutral-200 py-5`; avatar placeholder `size-10 rounded-full bg-neutral-200`, inicial centrada; nombre 14–16px y antigüedad 12–14px en gris.
+
+##### AmenitiesList
+
+- **Archivo:** `components/AmenitiesList.tsx`.
+- **Responsabilidad:** agrupa los servicios de la habitación en una cuadrícula legible.
+- **Props:**
+	```ts
+	interface AmenitiesListProps {
+		amenities: Amenity[];
+	}
+	```
+- **Estado:** ninguno; recibe los datos desde la página.
+- **Layout:** hijo del contenido principal, después de `HostInfo`; incluye el título de sección y un `AmenityItem` por elemento. En móvil usa una o dos columnas según el ancho disponible; desde `md` usa dos columnas.
+- **Tailwind:** título 18–20px semibold, `grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-2`, sin tarjeta envolvente ni sombra.
+
+##### AmenityItem
+
+- **Archivo:** `components/AmenityItem.tsx`.
+- **Responsabilidad:** muestra el icono emoji y la etiqueta de un servicio.
+- **Props:**
+	```ts
+	interface AmenityItemProps {
+		amenity: Amenity;
+	}
+	```
+- **Estado:** ninguno.
+- **Layout:** hijo de `AmenitiesList`; icono y texto en una fila, alineados al centro, con separación corta en móvil y escritorio.
+- **Tailwind:** `flex items-center gap-3 py-2`; emoji de 20–24px, etiqueta de 14–16px y texto neutral oscuro.
+
+##### BookingCard
+
+- **Archivo:** `components/BookingCard.tsx`.
+- **Responsabilidad:** presenta el precio por noche, permite elegir huéspedes y ofrece el CTA de reserva sin navegar.
+- **Props:**
+	```ts
+	interface BookingCardProps {
+		pricePerNight: number;
+		maxGuests: number;
+	}
+	```
+- **Estado:** `guests` vive en `BookingCard` con `useState(1)` y se pasa como valor controlado a `GuestCounter`; su cambio actualiza ese estado. El botón “Reservar” no navega ni inicia otro flujo.
+- **Layout:** hija de la columna de reserva, después de la galería y junto al contenido principal desde `md`; en escritorio es sticky durante el scroll. En móvil aparece como tarjeta normal al final de la columna, nunca fija ni superpuesta al contenido. Incluye precio, contador y CTA en disposición vertical.
+- **Tailwind:** `rounded-xl border border-neutral-200 bg-white p-5 shadow-md`; precio destacado de 20–24px semibold seguido de “por noche”; contador y CTA con separación vertical. Botón ancho completo, fondo oscuro y texto blanco, altura táctil cómoda.
+
+##### GuestCounter
+
+- **Archivo:** `components/GuestCounter.tsx`.
+- **Responsabilidad:** permite incrementar o reducir huéspedes dentro de los límites recibidos.
+- **Props:**
+	```ts
+	interface GuestCounterProps {
+		value: number;
+		min: number;
+		max: number;
+		onChange: (value: number) => void;
+	}
+	```
+- **Estado:** ninguno; es controlado por `BookingCard`.
+- **Layout:** hijo de `BookingCard`; etiqueta “Huéspedes” arriba y controles −, valor, + alineados en fila, con separación equilibrada en móvil y escritorio.
+- **Tailwind:** `flex items-center justify-between`; botones cuadrados de 36–40px, redondos, borde neutral y foco visible. Deshabilitar − si `value === min` y + si `value === max`; mostrar el número entre ambos. Botones con nombres accesibles.
+
+#### Tipos y datos
+
+`Property` se importa desde `types/` y se reutiliza sin volver a declarar sus campos. `Host`, `Amenity` y `Room` viven como tipos en `types/` (por ejemplo, `types/host.ts`, `types/amenity.ts` y `types/room.ts`):
+
+```ts
+interface Host {
+	name: string;
+	yearsHosting: number;
+}
+
+interface Amenity {
+	id: string;
+	label: string;
+	icon: string;
+}
+
+interface Room extends Property {
+	host: Host;
+	amenities: Amenity[];
+	maxGuests: number;
+	bedrooms: number;
+	beds: number;
+	bathrooms: number;
+}
+```
+
+El arreglo canónico de datos mock será `Room[]` en `data/rooms.ts`. Home y Catálogo consumirán esos mismos registros como `Property` (ya que `Room` extiende `Property`), y sus ids serán idénticos a los usados en los enlaces `/rooms/[id]`; así no se duplican listados con identificadores divergentes.
+
+#### Fuera de alcance
+
+- Banner de descarga de la aplicación.
+- Acciones de compartir y guardar/favoritos.
+- Acción “Mostrar todas las fotos” y visor de fotos; se muestran placeholders grises, no imágenes externas.
+- Calendario, fechas, disponibilidad y cobro real de la reserva.
+- Precio total, precio tachado, descuentos, cuotas y desglose de precio; se presenta únicamente el precio por noche.
+- Reseñas detalladas, texto de reseñas, insignias promocionales y bloques de popularidad ajenos a la valoración resumida.
+- Navegación desde “Reservar”, autenticación y persistencia de huéspedes.
+
+#### Propuestas
+
+- Si `RoomGallery` supera aproximadamente 80 líneas al combinar el mosaico responsive y la navegación, proponer dividir sus controles en `GalleryControls` (`components/GalleryControls.tsx`), sin incluirlo en el árbol base hasta que sea necesario. Sería responsable de los botones accesibles y el contador; recibiría `currentIndex`, `total` y `onNavigate`, sin estado propio. El layout sería una fila compacta superpuesta o debajo de la galería según el breakpoint, con botones táctiles y contador legible. Esta propuesta se limita a mantener cada componente por debajo del máximo aproximado y no cambia los demás nombres ni contratos.
 
 ## 5. Decisiones técnicas
 - Diseño mobile-first, tomando 375px como referencia y usando `md` (768px) como breakpoint para desktop.
